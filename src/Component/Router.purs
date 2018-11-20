@@ -5,9 +5,10 @@ import Prelude
 import AppM (Env)
 import Capability.Authenticate (class Authenticate)
 import Capability.LogMessages (class LogMessages)
+import Capability.ManageResource (class ManageResource)
 import Capability.Now (class Now)
+import Component.Home as Home
 import Control.Monad.Reader (class MonadAsk)
-import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Route (Route(..))
 import Effect.Aff.Class (class MonadAff)
@@ -28,7 +29,7 @@ component
   => Now m
   => LogMessages m
   => Authenticate m
---   => Navigate m
+  => ManageResource m
   => H.Component HH.HTML Query Unit Void m
 component =
   H.parentComponent
@@ -40,9 +41,9 @@ component =
 
   where 
 
-  render :: State -> H.ParentHTML Query (Const Void) Void m
+  render :: State -> H.ParentHTML Query (Home.Query) Unit m
   render { route } = case route of
-    Home -> HH.div_ []
+    Home -> HH.slot unit Home.component unit (const Nothing)
     Login -> HH.div_ []
     Register -> HH.div_ []
     Settings -> HH.div_ []
@@ -52,6 +53,6 @@ component =
     Profile _ -> HH.div_ []
     Favorites _ -> HH.div_ []
   
-  eval :: Query ~> H.ParentDSL State Query (Const Void) Void Void m
+  eval :: Query ~> H.ParentDSL State Query (Home.Query) Unit Void m
   eval = case _ of
     Navigate route a -> a <$ H.modify_ _ { route = route }

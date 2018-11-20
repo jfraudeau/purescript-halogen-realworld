@@ -7,7 +7,7 @@ import Prelude
 
 import Affjax (Request)
 import Api.Endpoint (Endpoint(..), noArticleParams)
-import Api.Request (AuthToken, AuthType(..), delete, get, post, put, runRequest, runRequest', runRequestAuth)
+import Api.Request (AuthToken, AuthType(..), delete, get, post, put, runRequest, runRequestAuth)
 import Api.Request as Request
 import Capability.Authenticate (class Authenticate, readAuth)
 import Capability.LogMessages (class LogMessages, logError)
@@ -28,6 +28,7 @@ import Data.Log as Log
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype)
 import Data.Route (Route(..), routeCodec)
+import Data.Tags (decodeTags)
 import Data.Traversable (for)
 import Data.Username (Username)
 import Effect.Aff (Aff)
@@ -133,10 +134,12 @@ instance navigateAppM :: Navigate AppM where
 
 instance manageResourceAppM :: ManageResource AppM where
   register body = runRequestAuth (post NoAuth (Just $ encodeJson body) Users)
-  getTags = runRequest' $ get NoAuth Tags
+  getTags = do
+    { apiRoot } <- ask
+    runRequest decodeTags $ addRoot apiRoot $ get NoAuth Tags
   getProfile u = do
-    { currentUser } <- ask
-    runRequest (decodeAuthor currentUser) $ get NoAuth $ Profiles u
+    { currentUser, apiRoot } <- ask
+    runRequest (decodeAuthor currentUser) $ addRoot apiRoot $ get NoAuth $ Profiles u
   getComments u = do
     { currentUser } <- ask 
     runRequest (decodeComments currentUser) $ get NoAuth $ Comments u
@@ -144,8 +147,11 @@ instance manageResourceAppM :: ManageResource AppM where
     { currentUser } <- ask
     runRequest (decodeArticle currentUser) (get NoAuth $ Article slug)
   getArticles params = do
-    { currentUser } <- ask
-    runRequest (decodeArticles currentUser) (get NoAuth $ Articles params)
+    { currentUser, apiRoot } <- ask
+    runRequest (decodeArticles currentUser) $ addRoot apiRoot $ get NoAuth $ Articles params
+
+addRoot :: forall a. String -> Request a -> Request a
+addRoot root req = req{ url = root <> req.url }
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
   getUser = 

@@ -6,7 +6,7 @@ import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (Either)
-import Data.Newtype (class Newtype)
+import Data.Newtype (class Newtype, unwrap)
 import Data.Profile (Profile)
 import Data.Username (Username)
 
@@ -24,7 +24,7 @@ data Author
 decodeAuthor :: Username -> Json -> Either String Author
 decodeAuthor u json = do
   prof <- decodeJson json
-  if prof.username == u
+  if (unwrap prof # _.username) == u
     then pure $ You prof
     else do
       following <- (_ .? "following") =<< decodeJson json
@@ -39,7 +39,7 @@ decodeAuthor u json = do
 -- profile, for example, so we'll provide some helpers.
 
 username :: Author -> Username
-username = _.username <<< profile
+username = _.username <<< unwrap <<< profile
 
 profile :: Author -> Profile
 profile (Following (FollowedAuthor p)) = p

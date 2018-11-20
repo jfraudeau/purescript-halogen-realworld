@@ -50,7 +50,8 @@ type Article =
 
 decodeArticles :: Username -> Json -> Either String (Array Article)
 decodeArticles u json = do
-  arr <- decodeJson json 
+  obj <- decodeJson json
+  arr <- obj .? "articles"
   traverse (decodeArticle u) arr
 
 decodeArticle :: Username -> Json -> Either String Article
@@ -63,6 +64,6 @@ decodeArticle u json = do
   tagList <- obj .? "tagList"
   favorited <- obj .? "favorited"
   favoritesCount <- obj .? "favoritesCount"
-  createdAt <- unformatDateTime "X" =<< obj .? "createdAt"
+  createdAt <- unformatDateTime "YYYY-MM-DDTHH:mm:ss.SSSZ" =<< obj .? "createdAt"
   author <- decodeAuthor u =<< obj .? "author"
   pure { slug, title, body, description, tagList, createdAt, favorited, favoritesCount, author }
