@@ -153,25 +153,25 @@ instance manageAuthResourceAppM :: ManageAuthResource AppM where
   updateUser p = 
     withAuthUser_ \t -> post (Auth t) (Just $ encodeJson p) Users
   followUser u = 
-    withAuthUser decodeAuthor \t -> post (Auth t) Nothing (Follow u)
+    withAuthUser (decodeAuthor <<< Just) \t -> post (Auth t) Nothing (Follow u)
   unfollowUser u = 
-    withAuthUser decodeAuthor \t -> delete (Auth t) (Follow u)
+    withAuthUser (decodeAuthor <<< Just) \t -> delete (Auth t) (Follow u)
   createArticle a = 
-    withAuthUser decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
+    withAuthUser (decodeArticle <<< Just) \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
   updateArticle s a = 
-    withAuthUser decodeArticle \t -> put (Auth t) (encodeJson a) (Article s)
+    withAuthUser (decodeArticle <<< Just) \t -> put (Auth t) (encodeJson a) (Article s)
   deleteArticle s = 
     withAuthUser_ \t -> delete (Auth t) (Article s)
   createComment s c = 
-    withAuthUser decodeComment \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
+    withAuthUser (decodeComment <<< Just) \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
   deleteComment s cid = 
     withAuthUser_ \t -> delete (Auth t) (Comment s cid)
   favoriteArticle s = 
-    withAuthUser decodeArticle \t -> post (Auth t) Nothing (Favorite s)
+    withAuthUser (decodeArticle <<< Just) \t -> post (Auth t) Nothing (Favorite s)
   unfavoriteArticle s = 
-    withAuthUser decodeArticle \t -> delete (Auth t) (Favorite s)
+    withAuthUser (decodeArticle <<< Just) \t -> delete (Auth t) (Favorite s)
   getFeed p = 
-    withAuthUser decodeArticles \t -> get (Auth t) (Feed p)
+    withAuthUser (decodeArticles <<< Just) \t -> get (Auth t) (Feed p)
 
 -- A helper function that leverages several of our capabilities together to help
 -- run requests that require authentication.
@@ -182,13 +182,13 @@ withUser
   => LogMessages m 
   => Navigate m 
   => Authenticate m
-  => (Username -> Json -> Either String a)
+  => (Maybe Username -> Json -> Either String a)
   -> Request Json
   -> m (Either String a)
 withUser decode req =
   readAuth >>= case _ of
-    Left err -> logError err *> pure (Left err)
-    Right au -> runRequest (decode (username au)) req
+    Left err -> logError err *> runRequest (decode $ Nothing) req
+    Right au -> runRequest (decode $ Just (username au)) req
 
 withAuthUser 
   :: forall m a 

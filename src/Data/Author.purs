@@ -6,6 +6,8 @@ import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Either (Either)
+import Data.Filterable (filter)
+import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
 import Data.Profile (Profile)
 import Data.Username (Username)
@@ -21,12 +23,12 @@ data Author
 -- We'll write a manual decoder instead of a decode instance so that we can test
 -- if the current user is the same as the one received in the object.
 
-decodeAuthor :: Username -> Json -> Either String Author
+decodeAuthor :: Maybe Username -> Json -> Either String Author
 decodeAuthor u json = do
   prof <- decodeJson json
-  if (unwrap prof # _.username) == u
-    then pure $ You prof
-    else do
+  case filter ((==) (unwrap prof # _.username)) u of
+    Just _ -> pure $ You prof
+    _ -> do
       following <- (_ .? "following") =<< decodeJson json
       if following
         then pure $ Following $ FollowedAuthor prof

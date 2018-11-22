@@ -48,13 +48,13 @@ type Article =
 -- or datetime; we'll need additional information for decoding than the data type
 -- alone, though generic decoding for records is supported.
 
-decodeArticles :: Username -> Json -> Either String (Array Article)
+decodeArticles :: Maybe Username -> Json -> Either String (Array Article)
 decodeArticles u json = do
   obj <- decodeJson json
   arr <- obj .? "articles"
   traverse (decodeArticle u) arr
 
-decodeArticle :: Username -> Json -> Either String Article
+decodeArticle :: Maybe Username -> Json -> Either String Article
 decodeArticle u json = do
   obj <- decodeJson json
   slug <- obj .? "slug"
