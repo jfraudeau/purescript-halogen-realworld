@@ -97,24 +97,24 @@ derive instance ordAuthType :: Ord AuthType
 -- `Authenticate` capability, so we'll leverage that to actually perform requests.
 -- These data types create the request data type, but do not actually perform effects.
 
-get :: AuthType -> Endpoint -> AX.Request Json
+get :: AuthType -> String -> Endpoint -> AX.Request Json
 get auth = mkRequest GET auth Nothing
 
-post :: AuthType -> Maybe Json -> Endpoint -> AX.Request Json
+post :: AuthType -> Maybe Json -> String -> Endpoint -> AX.Request Json
 post auth = mkRequest POST auth
 
-put :: AuthType -> Json -> Endpoint -> AX.Request Json
+put :: AuthType -> Json -> String -> Endpoint -> AX.Request Json
 put auth body = mkRequest PUT auth (Just body)
 
-delete :: AuthType -> Endpoint -> AX.Request Json
+delete :: AuthType -> String -> Endpoint -> AX.Request Json
 delete auth = mkRequest DELETE auth Nothing
 
 -- The underlying helper to construct a request 
 
-mkRequest :: Method -> AuthType -> Maybe Json -> Endpoint -> AX.Request Json
-mkRequest method auth body endpoint =
+mkRequest :: Method -> AuthType -> Maybe Json -> String -> Endpoint -> AX.Request Json
+mkRequest method auth body rootUrl endpoint =
   { method: Left method 
-  , url: print endpointCodec endpoint 
+  , url: rootUrl <> print endpointCodec endpoint 
   , headers: case auth of
       NoAuth -> []
       Auth (AuthToken t) -> [ RH.RequestHeader "Authorization" $ "Token " <> t ]

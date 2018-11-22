@@ -6,8 +6,10 @@ import AppM (Env)
 import Capability.Authenticate (class Authenticate)
 import Capability.LogMessages (class LogMessages)
 import Capability.ManageResource (class ManageResource)
+import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
-import Component.Home as Home
+import Component.Page.Home as Home
+import Component.Page.Login as Login
 import Control.Monad.Reader (class MonadAsk)
 import Data.Maybe (Maybe(..))
 import Data.Route (Route(..))
@@ -30,6 +32,7 @@ component
   => LogMessages m
   => Authenticate m
   => ManageResource m
+  => Navigate m
   => H.Component HH.HTML Query Unit Void m
 component =
   H.parentComponent
@@ -44,7 +47,7 @@ component =
   render :: State -> H.ParentHTML Query (Home.Query) Unit m
   render { route } = case route of
     Home -> HH.slot unit Home.component unit (const Nothing)
-    Login -> HH.div_ []
+    Login -> Login.render Navigate
     Register -> HH.div_ []
     Settings -> HH.div_ []
     Editor -> HH.div_ []

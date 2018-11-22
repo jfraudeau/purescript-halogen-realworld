@@ -133,51 +133,53 @@ instance navigateAppM :: Navigate AppM where
 -- these because we don't want to unnecessarily depend on an authentication class.
 
 instance manageResourceAppM :: ManageResource AppM where
-  register body = runRequestAuth (post NoAuth (Just $ encodeJson body) Users)
+  register body = do
+    { apiRoot } <- ask
+    runRequestAuth (post NoAuth (Just $ encodeJson body) apiRoot Users)
   getTags = do
     { apiRoot } <- ask
-    runRequest decodeTags $ addRoot apiRoot $ get NoAuth Tags
+    runRequest decodeTags $ get NoAuth apiRoot Tags
   getProfile u = do
     { currentUser, apiRoot } <- ask
-    runRequest (decodeAuthor currentUser) $ addRoot apiRoot $ get NoAuth $ Profiles u
+    runRequest (decodeAuthor currentUser) $ get NoAuth apiRoot $ Profiles u
   getComments u = do
-    { currentUser } <- ask 
-    runRequest (decodeComments currentUser) $ get NoAuth $ Comments u
+    { currentUser, apiRoot } <- ask 
+    runRequest (decodeComments currentUser) $ get NoAuth apiRoot $ Comments u
   getArticle slug = do
-    { currentUser } <- ask
-    runRequest (decodeArticle currentUser) (get NoAuth $ Article slug)
+    { currentUser, apiRoot } <- ask
+    runRequest (decodeArticle currentUser) (get NoAuth apiRoot $ Article slug)
   getArticles params = do
     { currentUser, apiRoot } <- ask
-    runRequest (decodeArticles currentUser) $ addRoot apiRoot $ get NoAuth $ Articles params
+    runRequest (decodeArticles currentUser) $ get NoAuth apiRoot $ Articles params
 
 addRoot :: forall a. String -> Request a -> Request a
 addRoot root req = req{ url = root <> req.url }
 
 instance manageAuthResourceAppM :: ManageAuthResource AppM where
   getUser = 
-    withAuth (const decodeJson) \t -> get (Auth t) Users
+    withAuth (const decodeJson) \t -> get (Auth t) "" Users
   updateUser p = 
-    withAuth_ \t -> post (Auth t) (Just $ encodeJson p) Users
+    withAuth_ \t -> post (Auth t) (Just $ encodeJson p) "" Users
   followUser u = 
-    withAuth decodeAuthor \t -> post (Auth t) Nothing (Follow u)
+    withAuth decodeAuthor \t -> post (Auth t) Nothing "" (Follow u)
   unfollowUser u = 
-    withAuth decodeAuthor \t -> delete (Auth t) (Follow u)
+    withAuth decodeAuthor \t -> delete (Auth t) "" (Follow u)
   createArticle a = 
-    withAuth decodeArticle \t -> post (Auth t) (Just $ encodeJson a) (Articles noArticleParams)
+    withAuth decodeArticle \t -> post (Auth t) (Just $ encodeJson a) "" (Articles noArticleParams)
   updateArticle s a = 
-    withAuth decodeArticle \t -> put (Auth t) (encodeJson a) (Article s)
+    withAuth decodeArticle \t -> put (Auth t) (encodeJson a) "" (Article s)
   deleteArticle s = 
-    withAuth_ \t -> delete (Auth t) (Article s)
+    withAuth_ \t -> delete (Auth t) "" (Article s)
   createComment s c = 
-    withAuth decodeComment \t -> post (Auth t) (Just $ encodeJson c) (Comments s)
+    withAuth decodeComment \t -> post (Auth t) (Just $ encodeJson c) "" (Comments s)
   deleteComment s cid = 
-    withAuth_ \t -> delete (Auth t) (Comment s cid)
+    withAuth_ \t -> delete (Auth t) "" (Comment s cid)
   favoriteArticle s = 
-    withAuth decodeArticle \t -> post (Auth t) Nothing (Favorite s)
+    withAuth decodeArticle \t -> post (Auth t) Nothing "" (Favorite s)
   unfavoriteArticle s = 
-    withAuth decodeArticle \t -> delete (Auth t) (Favorite s)
+    withAuth decodeArticle \t -> delete (Auth t) "" (Favorite s)
   getFeed p = 
-    withAuth decodeArticles \t -> get (Auth t) (Feed p)
+    withAuth decodeArticles \t -> get (Auth t) "" (Feed p)
 
 -- A helper function that leverages several of our capabilities together to help
 -- run requests that require authentication.
