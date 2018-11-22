@@ -15,7 +15,6 @@ import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
 import Routing.Duplex (parse)
 import Routing.Hash (matchesWith)
-import Unsafe.Coerce (unsafeCoerce)
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -24,8 +23,7 @@ main = HA.runHalogenAff do
   let environment :: Env
       environment = 
         { logLevel: Dev 
-        , apiRoot: "https://conduit.productionready.io/"
-        , currentUser: unsafeCoerce "test"
+        , rootUrl: "https://conduit.productionready.io/"
         }
 
       router :: H.Component HH.HTML Router.Query Unit Void Aff
